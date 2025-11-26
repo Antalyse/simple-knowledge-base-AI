@@ -62,7 +62,7 @@ def load_and_process_file(file_path, file_ext):
             documents = [Document(page_content=text_content, metadata={"source": file_path})]
 
         else:
-            return None #
+            return None
 
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
@@ -90,7 +90,7 @@ def ingest_file():
     raw_docs = load_and_process_file(temp_path, file_ext)
 
     if raw_docs is None:
-        os.remove(temp_path) # Clean up
+        os.remove(temp_path) 
         return jsonify({"error": f"Unsupported file type or processing error: {file_ext}"}), 400
 
     for doc in raw_docs:
@@ -125,4 +125,4 @@ def ask_question():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

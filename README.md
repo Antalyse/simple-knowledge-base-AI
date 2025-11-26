@@ -82,7 +82,7 @@ curl -X POST http://localhost:5000/ingest \
 ### 2. Ask a Question
 
 * **Endpoint:** `POST /ask`
-* **Purpose:** Takes a question, finds the 3 most relevant data chunks in the vector store, feeds them and the question to the local LLM (`llama3.2`), and returns a contextual answer.
+* **Purpose:** Takes a question, finds the 3 most relevant data chunks in the vector store, feeds them and the question to the local LLM and returns a contextual answer.
 * **Method:** `application/json`
 
 #### Example: Querying the Ingested Data
