@@ -9,7 +9,7 @@ cd /opt
 git clone https://github.com/Antalyse/simple-knowledge-base-AI.git ./simpleKnowledgeBaseAI
 cd simpleKnowledgeBaseAI/
 chmod +x app.py 
-apt install python3.12-venv
+apt install python3.12-venv -y
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt 

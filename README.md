@@ -1,6 +1,7 @@
-# Local RAG API (Flask + Ollama + LangChain)
+# Simple Knowledge Base AI
+Simple Knowledge Base AI is a lightweight, local RAG API (Flask + Ollama + LangChain).
 
-This project provides a simple, privacy-focused **Retrieval-Augmented Generation (RAG)** API that allows you to "chat" with your own documents and data sources without sending sensitive information to a cloud service. It leverages **Ollama** to run Large Language Models (LLMs) locally, **LangChain** for orchestration, and **ChromaDB** as the vector store for persistent memory.
+It provides a simple, privacy-focused **Retrieval-Augmented Generation (RAG)** API that allows you to "chat" with your own documents and data sources without sending sensitive information to a cloud service. It leverages **Ollama** to run Large Language Models (LLMs) locally, **LangChain** for orchestration, and **ChromaDB** as the vector store for persistent memory.
 
 ## 🌟 Features
 
@@ -11,11 +12,16 @@ This project provides a simple, privacy-focused **Retrieval-Augmented Generation
 
 ## 🛠️ Prerequisites
 
+1.  **System Requirements** Using below mentioned models requires certain hardware resources. 
+    * CPU: min. 2 Cores (degraded output quality). recommending 4+ cores
+    * RAM: Using Ubuntu 24.04 LTS 64-Bit it required a total of 1.6 GB RAM
+
+
 1.  **Ollama:** Must be installed and running on your system.
-    * Pull the required models for generation and embeddings:
+    * Pull the recommended models for generation and embeddings:
         ```bash
-        ollama pull llama3.2       # For answering questions (Generation Model)
-        ollama pull nomic-embed-text # For creating vector embeddings (Embedding Model)
+        ollama pull granite4:350m       # For answering questions (Generation Model)
+        ollama pull nomic-embed-text    # For creating vector embeddings (Embedding Model)
         ```
 2.  **Python:** Python 3.9+ environment.
 
@@ -34,7 +40,7 @@ This project provides a simple, privacy-focused **Retrieval-Augmented Generation
     pip install -r requirements.txt
     ```
 
-3.  **Ensure `app.py` is configured** with your chosen Ollama models (default is `llama3.2` and `nomic-embed-text`).
+3.  **Ensure `app.py` is configured** with your chosen Ollama models (default is `granite4:350m` and `nomic-embed-text`).
 
 ---
 
@@ -107,6 +113,6 @@ curl -X POST http://localhost:5000/ask \
 | :--- | :--- | :--- |
 | **API** | Flask | Provides the simple HTTP interface. |
 | **Orchestrator** | LangChain | Connects LLM, Embeddings, and Vector Store (RAG pipeline). |
-| **LLM Provider** | Ollama | Runs the LLM (e.g., Llama 3) entirely locally. |
+| **LLM Provider** | Ollama | Runs the LLM (e.g., Granite 4) entirely locally. |
 | **Vector Store** | ChromaDB | Stores text chunks and their embeddings on disk. |
 | **Embeddings** | OllamaEmbeddings (nomic-embed-text) | Converts text data into numerical vectors for searching. |
