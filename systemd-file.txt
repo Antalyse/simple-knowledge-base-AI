@@ -1,0 +1,25 @@
+[Unit]
+Description=Simple Knowledge Base AI Application
+After=network.target
+
+[Service]
+# The user that should run the application (e.g., a dedicated service user or your current user)
+User=root 
+# The group that should run the application
+Group=root 
+
+# Set the working directory for the application
+WorkingDirectory=/opt/simpleKnowledgeBaseAI/
+
+# The command to execute (the one you specified)
+ExecStart=/opt/simpleKnowledgeBaseAI/.venv/bin/python /opt/simpleKnowledgeBaseAI/app.py
+
+# Restart the service if it stops unexpectedly
+Restart=always
+
+# Standard output and error handling
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

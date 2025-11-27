@@ -15,3 +15,8 @@ source .venv/bin/activate
 pip install -r requirements.txt 
 python app.py
 
+nano /etc/systemd/system/simpleknowledgebase.service
+
+systemctl daemon-reload
+systemctl enable simpleknowledgebase.service
+systemctl start simpleknowledgebase.service
