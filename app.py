@@ -1,37 +1,24 @@
 import os
-# import json
-# import yaml
-# import tempfile
-# import shutil
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
+import ollama
+from cli import ASK_K, UPLOAD_FOLDER, FILE_TYPES, ingest, ask_question
 
-from cli import UPLOAD_FOLDER, ingest, ask_question
-
-# from langchain_community.llms import Ollama
-# from langchain_ollama import OllamaEmbeddings, OllamaLLM
-# from langchain_chroma import Chroma
-# from langchain_text_splitters import RecursiveCharacterTextSplitter
-# from langchain_classic.chains.retrieval_qa.base import RetrievalQA  # This should be exchanged as it security support will deprecate with December 2026
-# from langchain_core.documents import Document
-
-# from langchain_community.document_loaders import PyPDFLoader, CSVLoader, TextLoader
 
 app = Flask(__name__)
 
-# # Configuration 
-# MODEL_NAME = "granite4:350m"
-# EMBEDDING_MODEL = "nomic-embed-text"
-# VECTOR_STORE_PATH = "./chroma_db"
-# UPLOAD_FOLDER = "./temp_uploads"
 
-# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+@app.route('/')
+def home():    
+    return render_template('index.html', file_types=",".join(FILE_TYPES), ask_k=ASK_K)
 
-# embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
-# vector_store = Chroma(persist_directory=VECTOR_STORE_PATH, embedding_function=embeddings)
-# llm = OllamaLLM(model=MODEL_NAME)
-# text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-
+@app.route('/models')
+def models():
+    models_info = ollama.list()
+    output = []
+    for model in models_info['models']:
+        output.append(model['model'])
+    return jsonify({"models": output}), 200
 
 
 @app.route('/ingest', methods=['POST'])
@@ -48,10 +35,9 @@ def route_ingest():
     
     temp_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(temp_path)
+    output, code = ingest(temp_path)
     
-    ingest(temp_path)
-    
-    return jsonify({"message": "Files successfully ingested."}), 200
+    return jsonify(output), code
     
 
 @app.route('/ask', methods=['POST'])
@@ -59,7 +45,7 @@ def route_ask():
     data = request.json
     question = data.get('question')
     model = data.get('model')
-    k = data.get('k')
+    k = int(data.get('k'))
 
     if not question:
         return jsonify({"error": "No question provided"}), 400

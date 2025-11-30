@@ -12,7 +12,6 @@ from .config import VECTOR_STORE_PATH, EMBEDDING_MODEL
 
 def load_and_process_file(file_path, file_ext):
     documents = []
-    
     try:
         if file_ext == '.pdf':
             loader = PyPDFLoader(file_path)
@@ -90,7 +89,8 @@ def ingest(path):
         print(".. not allowed.")
         return "Command not allowed", 400
     
-    path = path + "/" if not path.endswith("/") else path
+    if os.path.isdir(path):
+        path = path + "/" if not path.endswith("/") else path
     
     if os.path.isdir(path):
         files = os.listdir(path)
@@ -102,8 +102,7 @@ def ingest(path):
         output = "\n".join(outputs)
     
     else:
-        output = ingest(path)
+        output = ingest_file(path)
         
         
-    output = ""
     return output, 200

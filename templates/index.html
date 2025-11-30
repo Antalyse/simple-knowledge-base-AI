@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Custom scrollbar for chat window */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .prose p { margin-bottom: 0.5rem; }
+        .prose ul { list-style-type: disc; margin-left: 1.5rem; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col font-sans" x-data="chatApp()">
+
+    <header class="bg-white shadow-sm p-4 z-10">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                Knowledge Base AI
+            </h1>
+            <button @click="window.location.reload()" class="text-gray-500 hover:text-blue-600 transition">
+                         Clear
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 flex gap-4 overflow-hidden">
+        
+        <aside class="w-1/4 bg-white rounded-xl shadow-sm p-4 flex flex-col gap-4 overflow-y-auto" :class="{'hidden md:flex': !showSettings, 'flex absolute inset-0 z-50 md:static': showSettings}">
+            
+            <div class="md:hidden flex justify-end">
+                <button @click="showSettings = false" class="text-gray-500">✕ Close</button>
+            </div>
+
+            <div class="border-b pb-4">
+                <h2 class="font-semibold text-gray-700 mb-2">Knowledge Base</h2>
+                
+                <button @click="showUploadWidget = !showUploadWidget" 
+                        class="w-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded flex items-center justify-center gap-2 mb-2 transition">
+                    <span x-text="showUploadWidget ? '−' : '+'" class="text-lg leading-none"></span>
+                    Add file to knowledge base
+                </button>
+
+                <div x-show="showUploadWidget" x-transition class="bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-4 text-center hover:bg-blue-100 transition relative cursor-pointer mb-2">
+                    <input type="file" @change="handleUpload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="{{file_types}}">
+                    <div x-show="!isUploading">
+                        <p class="text-blue-600 font-medium text-sm">Click to Upload</p>
+                        
+                    </div>
+                    <div x-show="isUploading" class="flex flex-col items-center">
+                        <div class="loader mb-2"></div>
+                        <p class="text-xs text-blue-600">Ingesting...</p>
+                    </div>
+                </div>
+                
+                <p x-show="uploadMessage" x-text="uploadMessage" class="text-xs mt-2 text-center" :class="uploadError ? 'text-red-500' : 'text-green-500'"></p>
+            </div>
+
+            <div class="flex-1">
+                <h2 class="font-semibold text-gray-700 mb-3">Settings</h2>
+                
+                <div class="mb-3">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Model Name</label>
+                    <div class="relative">
+                        <select x-model="settings.model" class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white appearance-none">
+                            <template x-for="model in availableModels" :key="model">
+                                <option :value="model" x-text="model" :selected="settings.model === model"></option>
+                            </template>
+                            <option x-show="availableModels.length === 0" disabled>Loading models...</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Retrieval Count (K)</label>
+                    <input type="number" x-model="settings.k" class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" min="1" max="10">
+                </div>
+            </div>
+
+            <div class="text-xs text-gray-400 text-center mt-auto">
+                System Ready
+            </div>
+        </aside>
+
+        <section class="flex-1 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden relative">
+            
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">AI</div>
+                    <div class="bg-gray-50 p-3 rounded-r-lg rounded-bl-lg text-sm text-gray-700 max-w-[80%]">
+                        Hello! Upload a document to the Knowledge Base and ask me questions about it.
+                    </div>
+                </div>
+
+                <template x-for="(msg, index) in chatHistory" :key="index">
+                    <div class="flex gap-3" :class="msg.role === 'user' ? 'flex-row-reverse' : ''">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" 
+                             :class="msg.role === 'user' ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-600'">
+                            <span x-text="msg.role === 'user' ? 'U' : 'AI'"></span>
+                        </div>
+                        
+                        <div class="p-3 rounded-lg text-sm max-w-[80%] prose"
+                             :class="msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-50 text-gray-800 rounded-bl-none'"
+                             x-html="msg.html">
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="isThinking" class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">AI</div>
+                    <div class="bg-gray-50 p-3 rounded-r-lg rounded-bl-lg flex items-center gap-1">
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-white">
+                <form @submit.prevent="sendMessage" class="flex gap-2 relative">
+                    <input type="text" x-model="question" 
+                           class="flex-1 border rounded-full px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-10" 
+                           placeholder="Ask a question about your document..."
+                           :disabled="isThinking">
+                    
+                    <button type="submit" 
+                            class="absolute right-2 top-1.5 p-1.5 rounded-full text-white transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            :class="question.trim() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300'"
+                            :disabled="!question.trim() || isThinking">
+                        <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    </button>
+                </form>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        function chatApp() {
+            return {
+                question: '',
+                chatHistory: [],
+                isThinking: false,
+                isUploading: false,
+                uploadMessage: '',
+                uploadError: false,
+                showSettings: false,
+                showUploadWidget: false, // Control visibility of upload box
+                availableModels: [], // Store list of models
+                settings: {
+                    model: localStorage.getItem('chat_model') || '', // Empty init, will be populated
+                    k: parseInt(localStorage.getItem('chat_k')) || {{ask_k}}
+                },
+
+                async init() {
+                    // Fetch available models on startup
+                    await this.fetchModels();
+
+                    // Watch for settings changes to save to localStorage
+                    this.$watch('settings.model', val => localStorage.setItem('chat_model', val));
+                    this.$watch('settings.k', val => localStorage.setItem('chat_k', val));
+                },
+
+                async fetchModels() {
+                    try {
+                        const res = await fetch('/models');
+                        const data = await res.json();
+                        this.availableModels = data.models || [];
+                        
+                        const savedModel = localStorage.getItem('chat_model');
+                        const defaultModel = 'granite4:350m';
+
+                        // Logic: 
+                        // 1. If saved model exists in current list, use it.
+                        // 2. Else if defaultModel (granite4:350m) is available, use it.
+                        // 3. Else use the first available model.
+                        
+                        if (savedModel && this.availableModels.includes(savedModel)) {
+                            this.settings.model = savedModel;
+                        } else if (this.availableModels.includes(defaultModel)) {
+                            this.settings.model = defaultModel;
+                        } else if (this.availableModels.length > 0) {
+                            this.settings.model = this.availableModels[0];
+                        }
+
+                    } catch (err) {
+                        console.error('Error fetching models:', err);
+                        // Fallback if fetch fails
+                        if (!this.settings.model) this.settings.model = 'no-models-found';
+                    }
+                },
+
+                async handleUpload(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    this.isUploading = true;
+                    this.uploadMessage = '';
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const res = await fetch('/ingest', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        
+                        if (res.ok) {
+                            this.uploadError = false;
+                            this.uploadMessage = `Success: ${file.name} ingested.`;
+                            // Hide widget after success after a brief delay
+                            setTimeout(() => {
+                                this.showUploadWidget = false;
+                                this.uploadMessage = '';
+                            }, 2000);
+                        } else {
+                            throw new Error(data.error || 'Upload failed');
+                        }
+                    } catch (err) {
+                        this.uploadError = true;
+                        this.uploadMessage = `Error: ${err.message}`;
+                    } finally {
+                        this.isUploading = false;
+                        e.target.value = null; // Reset input
+                    }
+                },
+
+                async sendMessage() {
+                    if (!this.question.trim()) return;
+
+                    const userQ = this.question;
+                    this.question = ''; // Clear input immediately
+
+                    // Add User Message
+                    this.chatHistory.push({
+                        role: 'user',
+                        html: userQ.replace(/\n/g, '<br>')
+                    });
+                    this.scrollToBottom();
+
+                    this.isThinking = true;
+
+                    try {
+                        const res = await fetch('/ask', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                question: userQ,
+                                model: this.settings.model,
+                                k: this.settings.k
+                            })
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok) throw new Error(data.error || 'Failed to get answer');
+
+                        // Render Markdown for bot response
+                        const botHtml = marked.parse(data.answer || data); 
+
+                        this.chatHistory.push({
+                            role: 'ai',
+                            html: botHtml
+                        });
+
+                    } catch (err) {
+                        this.chatHistory.push({
+                            role: 'ai',
+                            html: `<span class="text-red-500">Error: ${err.message}</span>`
+                        });
+                    } finally {
+                        this.isThinking = false;
+                        this.scrollToBottom();
+                    }
+                },
+
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const container = document.getElementById('chat-container');
+                        container.scrollTop = container.scrollHeight;
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

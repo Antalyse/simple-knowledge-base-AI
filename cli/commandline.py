@@ -26,12 +26,6 @@ def cli_ingest(args):
     output, code = ingest(args.path)
 
 
-    
-
-    
-
-
-
 
 def main():
     

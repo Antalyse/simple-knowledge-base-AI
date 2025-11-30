@@ -1,1 +1,0 @@
-UPLOAD_FOLDER = "/home/max/code/simpleKnowledgeBaseAI/temp_uploads"
