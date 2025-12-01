@@ -37,6 +37,8 @@ def load_and_process_file(file_path, file_ext):
                     data = yaml.safe_load(f)
                     text_content = yaml.dump(data, sort_keys=False)
             
+
+            
             documents = [Document(page_content=text_content, metadata={"source": file_path})]
 
         else:
@@ -88,6 +90,10 @@ def ingest(path):
     if path == "..":
         print(".. not allowed.")
         return "Command not allowed", 400
+    
+    
+    path = os.path.abspath(path)
+    
     
     if os.path.isdir(path):
         path = path + "/" if not path.endswith("/") else path

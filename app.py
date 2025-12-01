@@ -2,17 +2,19 @@ import os
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 import ollama
-from cli import ASK_K, UPLOAD_FOLDER, FILE_TYPES, ingest, ask_question
+from cli.config import ASK_K, UPLOAD_FOLDER, FILE_TYPES
+from cli.ingest import ingest
+from cli.ask import ask_question
 
 
 app = Flask(__name__)
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def home():    
     return render_template('index.html', file_types=",".join(FILE_TYPES), ask_k=ASK_K)
 
-@app.route('/models')
+@app.route('/models', methods=['GET'])
 def models():
     models_info = ollama.list()
     output = []
